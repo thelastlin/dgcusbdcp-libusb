@@ -19,13 +19,28 @@
 #include "include/cleanup.h"
 #include "dcpd.h"
 
-/* USB Vendor ID */
-#define CONEXANT_VID 0x0572
+static const struct usb_device_id dcpd_ids[] = {
+	/* Conexant USB ACF Modems, with signed NT drivers support */
+	{USB_DEVICE(0x0572, 0x1328)},
+	{USB_DEVICE(0x0572, 0x1329)},
+	{USB_DEVICE(0x0572, 0x1348)},
+	{USB_DEVICE(0x0572, 0x1349)},
+	/* Dell RD02-D400?*/
+	{USB_DEVICE(0x0572, 0x1324)},
+	/* Zoom Inc, Model 3095 */
+	{USB_DEVICE(0x0803, 0x3095)},
 
-/* Supported Product IDs */
-static const uint16_t supported_pids[] = {
-	0x1320, 0x1321, 0x1322, 0x1323, 0x1324, 0x1328, 0x1329, 0x1340, 0x1348,
-	0x1349, 0x0000 /* sentinel */
+	/*
+	 * Chipset defaults VID/PID pair.
+	 * setting VID/PID/SN requires EEPROM connected, see datasheet
+	 */
+	{USB_DEVICE(0x0572, 0x1320)},
+	{USB_DEVICE(0x0572, 0x1321)},
+	{USB_DEVICE(0x0572, 0x1322)},
+	{USB_DEVICE(0x0572, 0x1323)},
+	/* CX93010-2x, Data/Fax/Voice */
+	{USB_DEVICE(0x0572, 0x1340)},
+
 };
 
 /* USB endpoints */
@@ -60,13 +75,13 @@ static void print_usage(const char *prog)
     fprintf(stderr, "Example: sudo %s | aplay -f S16_LE -r 16000 -c 1\n", prog);
 }
 
-static int is_supported_pid(uint16_t pid)
+static const struct usb_device_id *find_device_id(uint16_t vid, uint16_t pid)
 {
-    for (int i = 0; supported_pids[i] != 0; i++) {
-	if (supported_pids[i] == pid)
-	    return 1;
+    for (size_t i = 0; i < ARRAY_SIZE(dcpd_ids); i++) {
+	if (dcpd_ids[i].idVendor == vid && dcpd_ids[i].idProduct == pid)
+	    return &dcpd_ids[i];
     }
-    return 0;
+    return NULL;
 }
 
 static void do_usbdev_cleanup(libusb_device_handle *handle)
@@ -103,7 +118,7 @@ static libusb_device_handle *find_and_open_device(libusb_context *ctx)
 	    continue;
 	}
 
-	if (desc.idVendor == CONEXANT_VID && is_supported_pid(desc.idProduct)) {
+	if (find_device_id(desc.idVendor, desc.idProduct)) {
 	    found = devices[i];
 	    pr_verbose("Found device: %04x:%04x\n", desc.idVendor,
 		       desc.idProduct);
