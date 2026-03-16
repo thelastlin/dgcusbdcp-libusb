@@ -2,12 +2,7 @@
  * dcpd - Conexant USB Modem Diagnostic Channel Daemon
  *
  * User-space implementation of the dgcusbdcp kernel module.
- * Reads audio data from USB modem and outputs raw PCM to stdout.
- *
- * Usage: dcpd [-v] [-q]
- *   -v    Print volume changes to stderr
- *
- * Output format: 16-bit signed little-endian PCM, 16000 Hz, mono
+ * Reads audio data from USB modem and outputs raw PCM stream to stdout.
  *
  * Example:
  *   sudo ./dcpd | aplay -f S16_LE -r 16000 -c 1
@@ -58,8 +53,9 @@ static void signal_handler(int sig)
 
 static void print_usage(const char *prog)
 {
-    fprintf(stderr, "Usage: %s [-v] [-q]\n", prog);
+    fprintf(stderr, "Usage: %s [-v] [-f]\n", prog);
     fprintf(stderr, "  -v    Verbose output to stderr\n");
+    fprintf(stderr, "  -f    Ignore error when setting USB configuration\n");
     fprintf(stderr, "\nOutput: 16-bit signed LE PCM, 16000 Hz, mono\n");
     fprintf(stderr, "Example: sudo %s | aplay -f S16_LE -r 16000 -c 1\n", prog);
 }
@@ -132,7 +128,7 @@ static libusb_device_handle *find_and_open_device(libusb_context *ctx)
     return handle;
 }
 
-static int configure_device(libusb_device_handle *handle)
+static int configure_device(libusb_device_handle *handle, unsigned int flags)
 {
     struct libusb_device *dev;
     int ret;
@@ -170,7 +166,8 @@ static int configure_device(libusb_device_handle *handle)
 	if (ret < 0) {
 	    pr_err("Error: Failed to set configuration %d: %s\n", CONFIG_NUM,
 		   libusb_error_name(ret));
-	    return -1;
+	    if (!FLAG_SET(flags, OPT_FORCE))
+		return -1;
 	}
 	pr_verbose("Set configuration to %d (was %d)\n", CONFIG_NUM,
 		   current_config);
@@ -320,15 +317,19 @@ DEFINE_FREE(libusb_ctx, libusb_context *, if (_T) libusb_exit(_T));
 
 int main(int argc, char *argv[])
 {
-    libusb_context *ctx __free(libusb_ctx) = NULL;
     libusb_device_handle *handle __free(libusb_devhandle) = NULL;
+    libusb_context *ctx __free(libusb_ctx) = NULL;
+    unsigned int flags = 0;
+    int opt;
     int ret;
 
-    int opt;
-    while ((opt = getopt(argc, argv, "vh")) != -1) {
+    while ((opt = getopt(argc, argv, "vfh")) != -1) {
 	switch (opt) {
 	case 'v':
-	    opt_verbose = 1;
+	    flags |= OPT_VERBOSE;
+	    break;
+	case 'f':
+	    flags |= OPT_FORCE;
 	    break;
 	case 'h':
 	    print_usage(argv[0]);
@@ -354,7 +355,7 @@ int main(int argc, char *argv[])
     if (!handle)
 	return 1;
 
-    ret = configure_device(handle);
+    ret = configure_device(handle, flags);
     if (ret < 0)
 	return ret;
 
