@@ -22,6 +22,7 @@
 #include <libusb-1.0/libusb.h>
 
 #include "include/cleanup.h"
+#include "dcpd.h"
 
 /* USB Vendor ID */
 #define CONEXANT_VID 0x0572
@@ -47,28 +48,6 @@ static const uint8_t dcp_enable_cmd[] = {0x19, 0x01};
 #define USB_TIMEOUT_MS 2000
 
 static int running = 1;
-
-static int opt_verbose = 0;
-
-static void pr_verbose(const char *fmt, ...)
-{
-    va_list args;
-
-    if (!opt_verbose)
-	return;
-    va_start(args, fmt);
-    vfprintf(stderr, fmt, args);
-    va_end(args);
-}
-
-static void pr_err(const char *fmt, ...)
-{
-    va_list args;
-
-    va_start(args, fmt);
-    vfprintf(stderr, fmt, args);
-    va_end(args);
-}
 
 static void signal_handler(int sig)
 {
@@ -359,6 +338,7 @@ int main(int argc, char *argv[])
 	    return 1;
 	}
     }
+    set_verbose(flags);
 
     signal(SIGINT, signal_handler);
     signal(SIGTERM, signal_handler);
