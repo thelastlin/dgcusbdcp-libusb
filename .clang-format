@@ -1,0 +1,30 @@
+---
+BasedOnStyle: LLVM
+
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterFunction: true
+  AfterControlStatement: Never
+
+UseTab: ForContinuationAndIndentation
+IndentWidth: 4
+TabWidth: 8
+ContinuationIndentWidth: 8
+AlignAfterOpenBracket: Align
+
+ColumnLimit: 80
+
+PointerAlignment: Right
+DerivePointerAlignment: false
+
+IncludeBlocks: Preserve
+SortIncludes:
+  Enabled: false
+
+AllowShortFunctionsOnASingleLine: None
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+
+SpaceBeforeParens: ControlStatements
+
+...
