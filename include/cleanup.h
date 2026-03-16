@@ -204,7 +204,10 @@
  * Without the NULL test it turns into a mess and the compiler can't help us.
  */
 
+#ifndef __always_inline
 #define __always_inline                 inline __attribute__((__always_inline__))
+#endif
+
 #define __cleanup(func)			__attribute__((__cleanup__(func)))
 #define __must_check                    __attribute__((__warn_unused_result__))
 
